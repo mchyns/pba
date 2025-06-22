@@ -273,13 +273,18 @@ def preprocess_text(text, term_dict, for_display=False):
 def load_model():
     # Cek apakah file model sudah ada
     if os.path.exists('model.pkl') and os.path.exists('vectorizer.pkl') and os.path.exists('term_dict.pkl'):
-        with open('model.pkl', 'rb') as f:
-            model = pickle.load(f)
-        with open('vectorizer.pkl', 'rb') as f:
-            vectorizer = pickle.load(f)
-        with open('term_dict.pkl', 'rb') as f:
-            term_dict = pickle.load(f)
-        return model, vectorizer, term_dict, None
+        try:
+            with open('model.pkl', 'rb') as f:
+                model = pickle.load(f)
+            with open('vectorizer.pkl', 'rb') as f:
+                vectorizer = pickle.load(f)
+            with open('term_dict.pkl', 'rb') as f:
+                term_dict = pickle.load(f)
+            return model, vectorizer, term_dict, None
+        except Exception as e:
+            # Jika ada error loading pickle (compatibility issues), return None
+            error_msg = f"Error loading model files (likely version compatibility issue): {str(e)}. Model perlu dilatih ulang."
+            return None, None, None, error_msg
     else:
         # Jika tidak ada, return None untuk semua
         return None, None, None, "Model belum dilatih. Silakan upload file data untuk melatih model."
@@ -668,15 +673,18 @@ if 'term_dict' not in st.session_state:
 
 # Load model pada startup
 if not st.session_state.model_trained:
-    model, vectorizer, term_dict, error_message = load_model()
-    if model is not None:
-        st.session_state.model = model
-        st.session_state.vectorizer = vectorizer
-        st.session_state.term_dict = term_dict
-        st.session_state.model_trained = True
-        st.session_state.error_message = None
-    else:
-        st.session_state.error_message = error_message
+    try:
+        model, vectorizer, term_dict, error_message = load_model()
+        if model is not None:
+            st.session_state.model = model
+            st.session_state.vectorizer = vectorizer
+            st.session_state.term_dict = term_dict
+            st.session_state.model_trained = True
+            st.session_state.error_message = None
+        else:
+            st.session_state.error_message = error_message
+    except Exception as e:
+        st.session_state.error_message = f"Error during model loading: {str(e)}. Model perlu dilatih ulang."
 else:
     model = st.session_state.model
     vectorizer = st.session_state.vectorizer
